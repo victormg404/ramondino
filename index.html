@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ramondino">
+<meta name="theme-color" content="#1f5a3d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Marcador Ramondino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: una columna de móvil; marcador arriba, historial abajo, barra de acciones fija al pie. Paleta: tapete verde + oro + copa roja */
+:root{
+  --bg:#edf1ea; --surface:#fbfcf8; --ink:#16241c; --muted:#5b6a60; --line:#d2dbd2;
+  --felt:#1f5a3d; --on-felt:#f3f6f1; --oro:#a87a08; --oro-soft:#f3e7c4; --copa:#b3262e; --on-copa:#fff6f5;
+  --bar:#dfe6dd;
+  --display:"Alfa Slab One","Rockwell","Georgia",serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1712; --surface:#16221b; --ink:#e5ece6; --muted:#93a399; --line:#2a3a30;
+  --felt:#4aa476; --on-felt:#08120d; --oro:#e2b443; --oro-soft:#3a3018; --copa:#e5585e; --on-copa:#1a0708;
+  --bar:#24332a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1712; --surface:#16221b; --ink:#e5ece6; --muted:#93a399; --line:#2a3a30;
+  --felt:#4aa476; --on-felt:#08120d; --oro:#e2b443; --oro-soft:#3a3018; --copa:#e5585e; --on-copa:#1a0708;
+  --bar:#24332a; color-scheme:dark}
+
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 120px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-top:18px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--oro);outline-offset:2px}
+
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:400;font-size:1.9rem;letter-spacing:.01em;margin:0;color:var(--felt);line-height:1}
+.limit-tag{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;text-align:right}
+.limit-tag b{display:block;font-family:var(--display);font-weight:400;font-size:1.35rem;color:var(--ink);letter-spacing:0}
+
+.note{background:var(--oro-soft);border:1px solid var(--oro);border-radius:10px;padding:10px 12px;font-size:.9rem;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.note button{background:none;border:0;color:var(--oro);font-weight:700;padding:4px 0;text-decoration:underline}
+
+/* marcador */
+.board{display:flex;flex-direction:column;gap:10px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:28px 1fr auto;gap:4px 12px;align-items:center}
+.pos{font-family:var(--display);color:var(--muted);font-size:1rem;text-align:center}
+.row.lead .pos{color:var(--oro)}
+.name{font-weight:700;font-size:1.05rem;min-width:0;overflow-wrap:anywhere}
+.total{font-family:var(--display);font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums;text-align:right}
+.sub{grid-column:2 / 4;display:flex;align-items:center;gap:10px}
+.bar{flex:1;height:6px;background:var(--bar);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--felt);border-radius:3px}
+.row.danger .bar i{background:var(--oro)}
+.left{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.row.out{opacity:.55}
+.row.out .bar i{background:var(--copa)}
+.pill{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:2px}
+.pill.out{background:var(--copa);color:var(--on-copa)}
+.pill.win{background:var(--oro);color:var(--surface)}
+
+.winner{background:var(--felt);color:var(--on-felt);border-radius:14px;padding:20px 18px;display:flex;flex-direction:column;gap:6px}
+.winner small{text-transform:uppercase;letter-spacing:.1em;font-weight:700;font-size:.75rem;opacity:.85}
+.winner strong{font-family:var(--display);font-weight:400;font-size:2rem;line-height:1.1;text-wrap:balance}
+.winner.ramo{background:var(--copa);color:var(--on-copa)}
+.winner .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.winner .acts button{border:2px solid currentColor;background:transparent;border-radius:10px;padding:8px 14px;font-weight:700}
+
+/* historial */
+h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 8px;font-weight:700}
+.hist{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.9rem}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;color:var(--muted)}
+thead th{font-size:.78rem;font-weight:700;color:var(--muted)}
+tbody tr:last-child td{border-bottom:0}
+td.cl{color:var(--felt);font-weight:700}
+td.neg{color:var(--felt)}
+.hist-acts{display:flex;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap}
+.link{background:none;border:0;color:var(--muted);font-weight:600;padding:6px 0;text-decoration:underline}
+.link.warn{color:var(--copa)}
+.empty{color:var(--muted);font-size:.9rem;padding:14px}
+
+/* barra fija */
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.dock .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr;gap:10px}
+.btn{border:0;border-radius:12px;padding:14px 12px;font-weight:700;font-size:1rem}
+.btn.main{background:var(--felt);color:var(--on-felt)}
+.btn.ramo{background:var(--copa);color:var(--on-copa)}
+.btn.ghost{background:transparent;border:2px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* setup */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+label.lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.names{display:flex;flex-direction:column;gap:8px}
+.nm{display:flex;gap:8px}
+.nm input{flex:1;min-width:0}
+input[type=text],input[type=number]{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:1rem;width:100%}
+.x{background:none;border:1px solid var(--line);border-radius:10px;width:44px;flex:none;color:var(--muted);font-size:1.2rem}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;padding:10px 6px;font-weight:700;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--felt);color:var(--on-felt)}
+.rules{font-size:.85rem;color:var(--muted);margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+
+/* hojas */
+.scrim{position:fixed;inset:0;background:rgba(5,12,8,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:18px 18px 0 0;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.sheet h3{font-family:var(--display);font-weight:400;font-size:1.4rem;margin:0}
+.sheet p.hint{margin:0;color:var(--muted);font-size:.88rem}
+.pr{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.pr.isc{border-color:var(--felt);box-shadow:inset 0 0 0 1px var(--felt)}
+.pr-top{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.pr-top .name{font-size:1rem}
+.cbtn{border:1px solid var(--line);background:transparent;border-radius:99px;padding:6px 12px;font-size:.85rem;font-weight:700;white-space:nowrap}
+.cbtn[aria-pressed=true]{background:var(--felt);border-color:var(--felt);color:var(--on-felt)}
+.pts{display:flex;gap:8px}
+.pts input{flex:1;min-width:0;font-variant-numeric:tabular-nums;font-size:1.1rem}
+.calc-open{flex:none;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:0 12px;font-weight:700;font-size:.85rem;display:flex;align-items:center;gap:6px}
+.calc-open svg{width:16px;height:20px}
+.sheet-acts{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;position:sticky;bottom:0;background:var(--surface);padding-top:6px}
+.err{color:var(--copa);font-weight:600;font-size:.9rem;margin:0}
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pick button{border:1px solid var(--line);background:transparent;border-radius:10px;padding:12px 14px;font-weight:700}
+.pick button[aria-pressed=true]{background:var(--copa);border-color:var(--copa);color:var(--on-copa)}
+
+/* calculadora de cartas */
+.calc-total{font-family:var(--display);font-size:3rem;line-height:1;font-variant-numeric:tabular-nums;color:var(--felt)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-height:34px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:4px 9px;font-weight:700;font-size:.9rem}
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.key{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:1px}
+.key b{font-family:var(--display);font-weight:400;font-size:1.35rem;line-height:1}
+.key span{font-size:.68rem;color:var(--muted);font-weight:600}
+.key.fig b{color:var(--oro)}
+.key:disabled{opacity:.35;cursor:default}
+.chip.meld{text-decoration:line-through;color:var(--muted);border-style:dashed}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;padding-top:env(safe-area-inset-top,0px);-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app"></div>
+<div id="layer"></div>
+
+<script>
+const KEY="ramondino.v1";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+function example(){
+  const p=[["a","Víctor"],["b","Laura"],["c","Toni"],["d","Marta"]].map(([id,name])=>({id,name}));
+  return {example:true,limit:50,players:p,rounds:[
+    {closer:"a",s:{a:-10,b:12,c:7,d:21}},
+    {closer:"c",s:{a:9,b:4,c:2,d:14}},
+    {closer:"b",s:{a:16,b:-10,c:11,d:8}}
+  ],ramondino:null,setup:false};
+}
+function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load()||example();
+let ui={sheet:null,draft:null,calc:null,confirmNew:false,setupNames:null,setupLimit:null,err:""};
+
+function totals(){const t={};S.players.forEach(p=>t[p.id]=0);S.rounds.forEach(r=>{for(const k in r.s)t[k]+=r.s[k]});return t}
+function isOut(id,t){return t[id]>=S.limit}
+function active(t){return S.players.filter(p=>!isOut(p.id,t))}
+function winner(t){
+  if(S.ramondino)return {id:S.ramondino,ramo:true};
+  if(S.players.length<2)return null;
+  const a=active(t);
+  if(a.length===1)return {id:a[0].id};
+  if(a.length===0){const best=[...S.players].sort((x,y)=>t[x.id]-t[y.id])[0];return {id:best.id}}
+  return null;
+}
+function rankCounts(cards){const m={};cards.forEach(k=>m[k.l]=(m[k.l]||0)+1);return m}
+function calcSum(cards){const m=rankCounts(cards);return cards.reduce((a,k)=>a+(m[k.l]>=3?0:k.v),0)}
+const nameOf=id=>(S.players.find(p=>p.id===id)||{}).name||"?";
+
+function render(){
+  const app=document.getElementById("app");
+  if(S.setup||!S.players.length){app.innerHTML=setupHTML();document.querySelector(".dock")?.remove();renderLayer();return}
+  const t=totals(),w=winner(t);
+  const sorted=[...S.players].sort((x,y)=>{const ox=isOut(x.id,t),oy=isOut(y.id,t);if(ox!==oy)return ox?1:-1;return t[x.id]-t[y.id]});
+  const leadId=w?w.id:sorted[0]?.id;
+  let h=`<header class="top"><h1>Ramondino</h1><div class="limit-tag">Se pierde a<b>${S.limit}</b></div></header>`;
+  if(S.example)h+=`<div class="note"><span>Partida de ejemplo para que veas cómo funciona.</span><button data-a="new">Empezar la mía</button></div>`;
+  if(w)h+=`<section class="winner ${w.ramo?"ramo":""}"><small>${w.ramo?"¡Ramondino! Victoria instantánea":"Gana la partida"}</small><strong>${esc(nameOf(w.id))}</strong>
+    <div class="acts"><button data-a="rematch">Revancha</button><button data-a="new">Nueva partida</button></div></section>`;
+  h+=`<section class="board">`+sorted.map((p,i)=>{
+    const v=t[p.id],out=isOut(p.id,t),pct=Math.max(0,Math.min(100,v/S.limit*100)),left=S.limit-v;
+    const cls=["row",out?"out":"",(!out&&left<=10)?"danger":"",p.id===leadId?"lead":""].join(" ");
+    const pill=w&&w.id===p.id?`<span class="pill win">Gana</span>`:out?`<span class="pill out">Fuera</span>`:"";
+    return `<div class="${cls}"><div class="pos">${out?"×":i+1}</div><div class="name">${esc(p.name)}${pill}</div><div class="total">${v}</div>
+      <div class="sub"><div class="bar"><i style="width:${pct}%"></i></div><span class="left">${out?"eliminado":"faltan "+left}</span></div></div>`;
+  }).join("")+`</section>`;
+  h+=`<section><h2>Rondas</h2>`;
+  if(!S.rounds.length)h+=`<div class="hist"><p class="empty">Aún no hay rondas. Pulsa «Anotar ronda» cuando alguien cierre.</p></div>`;
+  else{
+    h+=`<div class="hist"><table><thead><tr><th>#</th>${S.players.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>`;
+    S.rounds.forEach((r,i)=>{h+=`<tr><td>${i+1}</td>${S.players.map(p=>{
+      if(!(p.id in r.s))return `<td>—</td>`;const v=r.s[p.id];
+      return `<td class="${r.closer===p.id?"cl":""}">${r.closer===p.id?"✓ ":""}${v>0?"+"+v:v}</td>`}).join("")}</tr>`});
+    h+=`</tbody></table></div>`;
+  }
+  h+=`<div class="hist-acts">${S.rounds.length?`<button class="link" data-a="undo">Deshacer última ronda</button>`:"<span></span>"}
+    <button class="link warn" data-a="${ui.confirmNew?"newok":"newask"}">${ui.confirmNew?"¿Seguro? Pulsa para borrar":"Nueva partida"}</button></div></section>`;
+  app.innerHTML=h;
+  let dock=document.querySelector(".dock");
+  if(!dock){dock=document.createElement("div");dock.className="dock";document.body.appendChild(dock)}
+  dock.innerHTML=`<div class="in"><button class="btn main" data-a="round" ${w?"disabled":""}>Anotar ronda</button><button class="btn ramo" data-a="ramo" ${w?"disabled":""}>¡Ramondino!</button></div>`;
+  renderLayer();
+}
+
+function setupHTML(){
+  if(!ui.setupNames)ui.setupNames=["",""];
+  if(!ui.setupLimit)ui.setupLimit=S.limit||50;
+  return `<header class="top"><h1>Ramondino</h1></header>
+  <section class="card">
+    <label class="lbl">Jugadores</label>
+    <div class="names">${ui.setupNames.map((n,i)=>`<div class="nm"><input type="text" id="nm${i}" data-i="${i}" placeholder="Jugador ${i+1}" value="${esc(n)}" autocomplete="off">${ui.setupNames.length>2?`<button class="x" data-a="rmname" data-i="${i}" aria-label="Quitar">×</button>`:""}</div>`).join("")}</div>
+    <button class="btn ghost" data-a="addname">+ Añadir jugador</button>
+    <label class="lbl">Se pierde al llegar a</label>
+    <div class="seg">${[50,100].map(v=>`<button data-a="lim" data-v="${v}" aria-pressed="${ui.setupLimit===v}">${v} puntos</button>`).join("")}</div>
+    ${ui.err?`<p class="err">${esc(ui.err)}</p>`:""}
+    <button class="btn main" data-a="start">Empezar partida</button>
+  </section>
+  <ul class="rules">
+    <li>Quien cierra suma −10, o sus puntos si cierra con 1 a 4.</li>
+    <li>El resto suma lo que tiene en la mano: números por su valor, sota, caballo y rey 10.</li>
+    <li>Quien llega al límite queda fuera. Gana el último que quede.</li>
+    <li>Escalera completa de un palo (ramondino): gana al instante.</li>
+  </ul>`;
+}
+
+const CARD_SVG=`<svg viewBox="0 0 16 20" aria-hidden="true"><rect x="1" y="1" width="14" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="10" r="3" fill="currentColor"/></svg>`;
+
+function renderLayer(){
+  const L=document.getElementById("layer");
+  if(!ui.sheet){L.innerHTML="";return}
+  const t=totals();
+  let h="";
+  if(ui.sheet==="round"){
+    const d=ui.draft;
+    h=`<div class="sheet" role="dialog" aria-label="Anotar ronda"><h3>Ronda ${S.rounds.length+1}</h3><p class="hint">Marca quién ha cerrado y apunta los puntos de los demás.</p>`;
+    active(t).forEach(p=>{
+      const isc=d.closer===p.id;
+      h+=`<div class="pr ${isc?"isc":""}"><div class="pr-top"><span class="name">${esc(p.name)}</span><button class="cbtn" data-a="closer" data-id="${p.id}" aria-pressed="${isc}">${isc?"Ha cerrado":"Cierra"}</button></div>`;
+      if(isc){
+        h+=`<div class="seg">${[0,1,2,3,4].map(v=>`<button data-a="cpts" data-v="${v}" aria-pressed="${d.cpts===v}">${v===0?"−10":"+"+v}</button>`).join("")}</div>`;
+      }else{
+        const v=d.pts[p.id];
+        h+=`<div class="pts"><input type="number" inputmode="numeric" min="0" id="pt_${p.id}" data-id="${p.id}" placeholder="Puntos en mano" value="${v==null?"":v}"><button class="calc-open" data-a="calc" data-id="${p.id}">${CARD_SVG}Contar</button></div>`;
+      }
+      h+=`</div>`;
+    });
+    h+=`${ui.err?`<p class="err">${esc(ui.err)}</p>`:""}<div class="sheet-acts"><button class="btn ghost" data-a="close">Cancelar</button><button class="btn main" data-a="saveround">Guardar ronda</button></div></div>`;
+  }else if(ui.sheet==="calc"){
+    const c=ui.calc,sum=calcSum(c.cards),cnt=rankCounts(c.cards);
+    const melds=Object.keys(cnt).filter(l=>cnt[l]>=3).map(l=>`${cnt[l]===4?"Cuarteto":"Trío"} de ${l}`);
+    const keys=[1,2,3,4,5,6,7].map(n=>({l:String(n),s:"",v:n})).concat([{l:"S",s:"sota",v:10,f:1},{l:"C",s:"caballo",v:10,f:1},{l:"R",s:"rey",v:10,f:1}]);
+    h=`<div class="sheet" role="dialog" aria-label="Contar cartas"><h3>Cartas de ${esc(nameOf(c.pid))}</h3>
+      <div class="calc-total">${sum}</div>
+      <div class="chips">${c.cards.length?c.cards.map((k,i)=>`<button class="chip ${cnt[k.l]>=3?"meld":""}" data-a="rmcard" data-i="${i}" aria-label="Quitar ${k.l}">${k.l} ×</button>`).join(""):`<p class="hint">Toca las cartas que le quedan en la mano. Las que formen escalera no las toques.</p>`}</div>
+      ${melds.length?`<p class="hint">${melds.join(" · ")}: no puntúa</p>`:""}
+      <div class="keys">${keys.map(k=>`<button class="key ${k.f?"fig":""}" data-a="addcard" data-l="${k.l}" data-v="${k.v}" ${(cnt[k.l]||0)>=4?"disabled":""}><b>${k.l}</b><span>${k.s||"&nbsp;"}</span></button>`).join("")}</div>
+      <div class="sheet-acts"><button class="btn ghost" data-a="calcback">Volver</button><button class="btn main" data-a="calcuse">Apuntar ${sum}</button></div></div>`;
+  }else if(ui.sheet==="ramo"){
+    h=`<div class="sheet" role="dialog" aria-label="Ramondino"><h3>¿Quién ha hecho ramondino?</h3><p class="hint">Escalera completa de las 10 cartas de un palo. Gana al instante.</p>
+      <div class="pick">${active(t).map(p=>`<button data-a="rpick" data-id="${p.id}" aria-pressed="${ui.draft===p.id}">${esc(p.name)}</button>`).join("")}</div>
+      <div class="sheet-acts"><button class="btn ghost" data-a="close">Cancelar</button><button class="btn ramo" data-a="rsave" ${ui.draft?"":"disabled"}>Confirmar</button></div></div>`;
+  }
+  L.innerHTML=`<div class="scrim" data-a="scrim">${h}</div>`;
+}
+
+document.addEventListener("input",e=>{
+  const el=e.target;
+  if(el.id&&el.id.startsWith("nm")){ui.setupNames[+el.dataset.i]=el.value;return}
+  if(el.id&&el.id.startsWith("pt_")&&ui.draft){const v=el.value.trim();ui.draft.pts[el.dataset.id]=v===""?null:Math.max(0,parseInt(v,10)||0)}
+});
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;
+  const a=b.dataset.a;
+  if(a==="scrim"){if(e.target===b){ui.sheet=null;ui.err="";renderLayer()}return}
+  if(a!=="newask"&&a!=="newok")ui.confirmNew=false;
+  switch(a){
+    case "new": S.setup=true;ui.setupNames=S.example?["",""]:S.players.map(p=>p.name);ui.setupLimit=S.limit;ui.err="";render();break;
+    case "newask": ui.confirmNew=true;render();break;
+    case "newok": ui.confirmNew=false;S.setup=true;ui.setupNames=S.players.map(p=>p.name);ui.setupLimit=S.limit;render();break;
+    case "addname": ui.setupNames.push("");render();document.getElementById("nm"+(ui.setupNames.length-1))?.focus();break;
+    case "rmname": ui.setupNames.splice(+b.dataset.i,1);render();break;
+    case "lim": ui.setupLimit=+b.dataset.v;render();break;
+    case "start":{
+      const names=ui.setupNames.map(n=>n.trim()).filter(Boolean);
+      if(names.length<2){ui.err="Hacen falta al menos dos jugadores.";render();break}
+      S={example:false,limit:ui.setupLimit,players:names.map(n=>({id:uid(),name:n})),rounds:[],ramondino:null,setup:false};
+      ui.err="";ui.setupNames=null;save();render();window.scrollTo(0,0);break}
+    case "rematch": S.rounds=[];S.ramondino=null;S.example=false;save();render();break;
+    case "undo": S.rounds.pop();S.ramondino=null;save();render();break;
+    case "round": ui.sheet="round";ui.draft={closer:null,cpts:0,pts:{}};ui.err="";renderLayer();break;
+    case "closer":{const id=b.dataset.id;ui.draft.closer=ui.draft.closer===id?null:id;ui.draft.cpts=0;delete ui.draft.pts[id];ui.err="";renderLayer();break}
+    case "cpts": ui.draft.cpts=+b.dataset.v;renderLayer();break;
+    case "calc":{const id=b.dataset.id;ui.calc={pid:id,cards:[]};ui.sheet="calc";renderLayer();break}
+    case "addcard": ui.calc.cards.push({l:b.dataset.l,v:+b.dataset.v});renderLayer();break;
+    case "rmcard": ui.calc.cards.splice(+b.dataset.i,1);renderLayer();break;
+    case "calcback": ui.sheet="round";renderLayer();break;
+    case "calcuse":{const sum=calcSum(ui.calc.cards);ui.draft.pts[ui.calc.pid]=sum;ui.sheet="round";renderLayer();break}
+    case "saveround":{
+      const d=ui.draft,t=totals();
+      if(!d.closer){ui.err="Marca quién ha cerrado.";renderLayer();break}
+      const s={};active(t).forEach(p=>{s[p.id]=p.id===d.closer?(d.cpts===0?-10:d.cpts):(d.pts[p.id]||0)});
+      S.rounds.push({closer:d.closer,s});S.example=false;save();ui.sheet=null;ui.err="";render();break}
+    case "ramo": ui.sheet="ramo";ui.draft=null;renderLayer();break;
+    case "rpick": ui.draft=b.dataset.id;renderLayer();break;
+    case "rsave": if(ui.draft){S.ramondino=ui.draft;S.example=false;save();ui.sheet=null;render();window.scrollTo(0,0)}break;
+    case "close": ui.sheet=null;ui.err="";renderLayer();break;
+  }
+});
+render();
+</script>
+
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
